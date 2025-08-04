@@ -71,6 +71,18 @@ export const authActions = {
     authStore.set(initialState);
   },
 
+  // Delete Account
+  async deleteAccount() {
+    const response = await authService.deleteAccount();
+    
+    if (response.success) {
+      authStore.set(initialState);
+      return { success: true };
+    }
+    
+    return { success: false, error: response.error };
+  },
+
   // Update user data
   updateUser(user: User) {
     authStore.update(state => ({

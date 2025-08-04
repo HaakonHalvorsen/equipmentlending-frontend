@@ -51,12 +51,31 @@ export class ApiClient {
         headers,
       });
 
-      const data = await response.json();
+      // Handle empty responses (common with DELETE requests)
+      let data;
+      const contentType = response.headers.get('content-type');
+      const hasJsonContent = contentType && contentType.includes('application/json');
+      
+      if (hasJsonContent) {
+        try {
+          data = await response.json();
+        } catch (jsonError) {
+          // If JSON parsing fails but response is ok, treat as empty success
+          if (response.ok) {
+            data = {};
+          } else {
+            throw jsonError;
+          }
+        }
+      } else {
+        // Non-JSON response, treat as empty object for successful requests
+        data = response.ok ? {} : { error: 'Unknown error occurred' };
+      }
 
       if (!response.ok) {
         return {
           success: false,
-          error: data.detail || data.message || `HTTP Error: ${response.status}`,
+          error: data.detail || data.message || data.error || `HTTP Error: ${response.status}`,
         };
       }
 
