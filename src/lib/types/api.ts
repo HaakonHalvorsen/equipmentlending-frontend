@@ -3,6 +3,13 @@
 export interface User {
   id: string;
   email: string;
+  name?: string;
+  role?: string;
+  company?: string;
+  phone?: string;
+  contact_person_name?: string;
+  contact_person_email?: string;
+  contact_person_phone?: string;
   created_at?: string;
   last_sign_in_at?: string;
 }
@@ -10,6 +17,13 @@ export interface User {
 export interface UserCreate {
   email: string;
   password: string;
+  name: string;
+  role?: string;
+  company: string;
+  phone?: string;
+  contact_person_name?: string;
+  contact_person_email?: string;
+  contact_person_phone?: string;
 }
 
 export interface UserLogin {

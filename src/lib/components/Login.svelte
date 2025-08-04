@@ -13,10 +13,21 @@
   let loading = false;
   let error = '';
   let showRegister = false;
+  let showDeleteConfirm = false;
 
   // Auth form data
   let loginForm = { email: '', password: '' };
-  let registerForm = { email: '', password: '' };
+  let registerForm = {
+    email: '',
+    password: '',
+    name: '',
+    role: 'user',
+    company: '',
+    phone: '',
+    contact_person_name: '',
+    contact_person_email: '',
+    contact_person_phone: ''
+  };
 
   // Equipment form data
   let equipmentForm = {
@@ -84,11 +95,44 @@
     error = '';
     
     try {
-      const result = await authActions.register(registerForm);
+      // Create payload with only required fields and non-empty optional fields
+      const payload: any = {
+        email: registerForm.email,
+        password: registerForm.password,
+        name: registerForm.name,
+        role: registerForm.role,
+        company: registerForm.company
+      };
+
+      // Only include optional fields if they have values
+      if (registerForm.phone && registerForm.phone.trim()) {
+        payload.phone = registerForm.phone.trim();
+      }
+      if (registerForm.contact_person_name && registerForm.contact_person_name.trim()) {
+        payload.contact_person_name = registerForm.contact_person_name.trim();
+      }
+      if (registerForm.contact_person_email && registerForm.contact_person_email.trim()) {
+        payload.contact_person_email = registerForm.contact_person_email.trim();
+      }
+      if (registerForm.contact_person_phone && registerForm.contact_person_phone.trim()) {
+        payload.contact_person_phone = registerForm.contact_person_phone.trim();
+      }
+
+      const result = await authActions.register(payload);
       if (!result.success) {
         error = result.error || 'Registration failed';
       } else {
-        registerForm = { email: '', password: '' };
+        registerForm = {
+          email: '',
+          password: '',
+          name: '',
+          role: 'user',
+          company: '',
+          phone: '',
+          contact_person_name: '',
+          contact_person_email: '',
+          contact_person_phone: ''
+        };
         showRegister = false;
       }
     } catch (err) {
@@ -101,6 +145,26 @@
   async function handleLogout() {
     await authActions.logout();
     equipment = [];
+  }
+
+  async function handleDeleteAccount() {
+    loading = true;
+    error = '';
+    
+    try {
+      const result = await authActions.deleteAccount();
+      if (!result.success) {
+        error = result.error || 'Failed to delete account';
+      } else {
+        // Account deleted successfully, user is automatically logged out
+        equipment = [];
+      }
+    } catch (err) {
+      error = 'Failed to delete account';
+    } finally {
+      loading = false;
+      showDeleteConfirm = false;
+    }
   }
 
   async function addEquipment(event: SubmitEvent) {
@@ -163,6 +227,39 @@
       </div>
     {/if}
 
+    <!-- Delete Account Confirmation Modal -->
+    {#if showDeleteConfirm}
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 max-w-md mx-4">
+          <div class="text-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Delete Account</h3>
+            <p class="text-gray-600 mb-6">Are you sure you want to delete your account? This action cannot be undone and you will lose all your data.</p>
+            
+            <div class="flex space-x-3">
+              <button
+                onclick={() => showDeleteConfirm = false}
+                class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onclick={handleDeleteAccount}
+                disabled={loading}
+                class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50"
+              >
+                {loading ? 'Deleting...' : 'Delete Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
+
     <!-- Authentication Section -->
     <div class="max-w-md mx-auto">
       {#if currentUser}
@@ -176,15 +273,29 @@
             </div>
             <h2 class="text-xl font-semibold text-gray-900">Welcome back!</h2>
             <p class="text-gray-600 mt-1">{currentUser.email}</p>
-            <p class="text-sm text-gray-500 mt-1">User ID: {currentUser.id}</p>
+            {#if currentUser.name}
+              <p class="text-gray-600">{currentUser.name}</p>
+            {/if}
+            {#if currentUser.company}
+              <p class="text-sm text-gray-500">{currentUser.company}</p>
+            {/if}
+            <p class="text-xs text-gray-500 mt-1">User ID: {currentUser.id}</p>
           </div>
           
-          <button 
-            onclick={handleLogout}
-            class="w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors duration-200 border border-gray-200"
-          >
-            Sign Out
-          </button>
+          <div class="space-y-3">
+            <button 
+              onclick={handleLogout}
+              class="w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors duration-200 border border-gray-200"
+            >
+              Sign Out
+            </button>
+            <button 
+              onclick={() => showDeleteConfirm = true}
+              class="w-full px-4 py-3 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-xl transition-colors duration-200 border border-red-200"
+            >
+              Delete Account
+            </button>
+          </div>
         </div>
       {:else}
         {#if !showRegister}
@@ -257,7 +368,7 @@
           </div>
         {:else}
           <!-- Register Form -->
-          <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 max-w-2xl mx-auto">
             <div class="text-center mb-8">
               <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-600 rounded-full mx-auto mb-4 flex items-center justify-center">
                 <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -269,45 +380,122 @@
             </div>
 
             <form onsubmit={handleRegister} class="space-y-6">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                <input 
-                  type="email" 
-                  placeholder="Enter your email" 
-                  bind:value={registerForm.email}
-                  class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
-                  required
-                />
+              <!-- Personal Information -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                  <input 
+                    type="text" 
+                    placeholder="Enter your full name" 
+                    bind:value={registerForm.name}
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+                  <input 
+                    type="email" 
+                    placeholder="Enter your email" 
+                    bind:value={registerForm.email}
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
+                  <input 
+                    type="password" 
+                    placeholder="Create a password" 
+                    bind:value={registerForm.password}
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                  <input 
+                    type="tel" 
+                    placeholder="Enter your phone number" 
+                    bind:value={registerForm.phone}
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <!-- Company Information -->
+              <div class="border-t pt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Company Information</h3>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
+                  <input 
+                    type="text" 
+                    placeholder="Enter company name" 
+                    bind:value={registerForm.company}
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                    required
+                  />
+                </div>
+              </div>
+
+              <!-- Contact Person Information -->
+              <div class="border-t pt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Contact Person (Optional)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Contact Person Name</label>
+                    <input 
+                      type="text" 
+                      placeholder="Enter contact person name" 
+                      bind:value={registerForm.contact_person_name}
+                      class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Contact Person Email</label>
+                    <input 
+                      type="email" 
+                      placeholder="Enter contact person email" 
+                      bind:value={registerForm.contact_person_email}
+                      class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                    />
+                  </div>
+                  
+                  <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Contact Person Phone</label>
+                    <input 
+                      type="tel" 
+                      placeholder="Enter contact person phone" 
+                      bind:value={registerForm.contact_person_phone}
+                      class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                    />
+                  </div>
+                </div>
               </div>
               
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                <input 
-                  type="password" 
-                  placeholder="Create a password" 
-                  bind:value={registerForm.password}
-                  class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
-                  required
-                />
+              <div class="pt-4">
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  class="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {#if loading}
+                    <span class="flex items-center justify-center">
+                      <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Creating Account...
+                    </span>
+                  {:else}
+                    Create Account
+                  {/if}
+                </button>
               </div>
-              
-              <button 
-                type="submit" 
-                disabled={loading}
-                class="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {#if loading}
-                  <span class="flex items-center justify-center">
-                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Creating Account...
-                  </span>
-                {:else}
-                  Create Account
-                {/if}
-              </button>
             </form>
             
             <!-- Back to login -->
@@ -480,7 +668,7 @@
                         item.status === 'lent' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-red-100 text-red-800'
                       }">
-                        {item.status?.charAt(0).toUpperCase() + item.status?.slice(1).replace('_', ' ')}
+                        {item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1).replace('_', ' ') : 'Unknown'}
                       </span>
                     </div>
                   </div>

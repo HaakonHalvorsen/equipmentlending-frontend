@@ -43,6 +43,17 @@ export class AuthService {
     return apiClient.get<User>('/auth/me');
   }
 
+  async deleteAccount(): Promise<ApiResponse<Record<string, any>>> {
+    const response = await apiClient.delete<Record<string, any>>('/auth/me');
+    
+    // Clear the token after account deletion
+    if (response.success) {
+      apiClient.setToken(null);
+    }
+    
+    return response;
+  }
+
   async refreshToken(refreshToken: string): Promise<ApiResponse<UserResponse>> {
     const response = await apiClient.post<UserResponse>(
       `/auth/refresh?refresh_token=${encodeURIComponent(refreshToken)}`
