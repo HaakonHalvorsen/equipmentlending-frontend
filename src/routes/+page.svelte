@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Login } from '$lib';
+  import MainApp from '$lib/components/MainApp.svelte';
 </script>
 
-<Login />
+<MainApp />

@@ -1,0 +1,51 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { authStore, authActions } from '../stores/auth.js';
+  import Navigation from './Navigation.svelte';
+  import Home from './Home.svelte';
+  import AdminPanel from './AdminPanel.svelte';
+  import Login from './Login.svelte';
+
+  let currentPage = 'home';
+  let isAuthenticated = false;
+
+  // Subscribe to auth store
+  $: isAuthenticated = $authStore.isAuthenticated;
+
+  onMount(async () => {
+    await authActions.init();
+  });
+
+  function handleNavigation(page: string) {
+    currentPage = page;
+  }
+
+  function renderCurrentPage() {
+    switch (currentPage) {
+      case 'home':
+        return Home;
+      case 'admin':
+        return AdminPanel;
+      case 'settings':
+        return Home; // Placeholder - will be Settings component
+      default:
+        return Home;
+    }
+  }
+</script>
+
+{#if !isAuthenticated}
+  <Login />
+{:else}
+  <div class="flex min-h-screen bg-gray-50">
+    <!-- Navigation Sidebar -->
+    <Navigation {currentPage} onNavigate={handleNavigation} />
+    
+    <!-- Main Content -->
+    <div class="flex-1 ml-64 transition-all duration-300">
+      <main class="min-h-screen">
+        <svelte:component this={renderCurrentPage()} />
+      </main>
+    </div>
+  </div>
+{/if} 
