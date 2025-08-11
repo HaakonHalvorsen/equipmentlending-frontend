@@ -57,6 +57,65 @@ export interface Equipment {
   created_at?: string;
 }
 
+// Lending types
+export interface Lending {
+  id?: number;
+  equipment_id: number;
+  person_id: number;
+  description: string;
+  is_service: boolean;
+  lend_time: string;
+  submit_time?: string;
+  created_at?: string;
+}
+
+export interface LendingCreate {
+  equipment_id: number;
+  description: string;
+  is_service: boolean;
+  lend_time?: string;
+}
+
+// Person types
+export enum PersonRole {
+  USER = 'user',
+  ADMIN = 'admin'
+}
+
+export interface Person {
+  id: number;
+  user_id: string;
+  name: string;
+  email?: string;
+  role: PersonRole;
+  company?: string;
+  phone?: string;
+  contact_person_name?: string;
+  contact_person_email?: string;
+  contact_person_phone?: string;
+  created_at?: string;
+}
+
+export interface PersonUpdate {
+  name?: string;
+  email?: string;
+  role?: PersonRole;
+  company?: string;
+  phone?: string;
+  contact_person_name?: string;
+  contact_person_email?: string;
+  contact_person_phone?: string;
+}
+
+export interface PersonProfileUpdate {
+  name?: string;
+  company?: string;
+  phone?: string;
+  contact_person_name?: string;
+  contact_person_email?: string;
+  contact_person_phone?: string;
+}
+
 export interface HTTPValidationError {
   detail: ValidationError[];
 }
@@ -77,6 +136,7 @@ export interface ApiResponse<T> {
 // Authentication context
 export interface AuthState {
   user: User | null;
+  person: Person | null;
   token: string | null;
   isAuthenticated: boolean;
 } 

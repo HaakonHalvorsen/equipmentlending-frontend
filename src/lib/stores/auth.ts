@@ -1,94 +1,119 @@
 import { writable } from 'svelte/store';
-import { authService, apiClient } from '../api/index.js';
-import type { AuthState, User, UserLogin, UserCreate } from '../api/index.js';
+import { authService } from '../api/auth.js';
+import { personService } from '../api/person.js';
+import { apiClient } from '../api/client.js';
+import type { AuthState, UserLogin, UserCreate } from '../api/index.js';
 
-// Initial state
 const initialState: AuthState = {
   user: null,
+  person: null,
   token: null,
   isAuthenticated: false
 };
 
-// Create the store
 export const authStore = writable<AuthState>(initialState);
 
-// Auth actions
 export const authActions = {
-  // Initialize auth state from stored token
   async init() {
-    const token = authService.isAuthenticated();
+    const token = localStorage.getItem('auth_token');
     if (token) {
-      const response = await authService.getCurrentUser();
-      if (response.success && response.data) {
-        authStore.set({
-          user: response.data,
-          token: apiClient.getToken(),
-          isAuthenticated: true
-        });
-      } else {
-        // Invalid token, clear it
-        authService.logout();
+      apiClient.setToken(token);
+      try {
+        const userResponse = await authService.getCurrentUser();
+        if (userResponse.success && userResponse.data) {
+          // Fetch person profile
+          console.log('Fetching person profile...');
+          const personResponse = await personService.getCurrentUserProfile();
+          console.log('Person response:', personResponse);
+          
+          authStore.set({
+            user: userResponse.data,
+            person: personResponse.success ? (personResponse.data || null) : null,
+            token,
+            isAuthenticated: true
+          });
+        } else {
+          localStorage.removeItem('auth_token');
+          apiClient.setToken(null);
+          authStore.set(initialState);
+        }
+      } catch (error) {
+        console.error('Error in auth init:', error);
+        localStorage.removeItem('auth_token');
+        apiClient.setToken(null);
         authStore.set(initialState);
       }
     }
   },
 
-  // Login
   async login(credentials: UserLogin) {
     const response = await authService.login(credentials);
-    
     if (response.success && response.data) {
+      const { user, access_token } = response.data;
+      localStorage.setItem('auth_token', access_token);
+      apiClient.setToken(access_token);
+      
+      // Fetch person profile
+      console.log('Login: Fetching person profile...');
+      const personResponse = await personService.getCurrentUserProfile();
+      console.log('Login: Person response:', personResponse);
+      
       authStore.set({
-        user: response.data.user,
-        token: response.data.access_token,
+        user,
+        person: personResponse.success ? (personResponse.data || null) : null,
+        token: access_token,
         isAuthenticated: true
       });
       return { success: true };
     }
-    
     return { success: false, error: response.error };
   },
 
-  // Register
   async register(userData: UserCreate) {
     const response = await authService.register(userData);
-    
     if (response.success && response.data) {
+      const { user, access_token } = response.data;
+      localStorage.setItem('auth_token', access_token);
+      apiClient.setToken(access_token);
+      
+      // Fetch person profile
+      const personResponse = await personService.getCurrentUserProfile();
+      
       authStore.set({
-        user: response.data.user,
-        token: response.data.access_token,
+        user,
+        person: personResponse.success ? (personResponse.data || null) : null,
+        token: access_token,
         isAuthenticated: true
       });
       return { success: true };
     }
-    
     return { success: false, error: response.error };
   },
 
-  // Logout
   async logout() {
     await authService.logout();
+    localStorage.removeItem('auth_token');
+    apiClient.setToken(null);
     authStore.set(initialState);
   },
 
-  // Delete Account
   async deleteAccount() {
     const response = await authService.deleteAccount();
-    
     if (response.success) {
       authStore.set(initialState);
       return { success: true };
     }
-    
     return { success: false, error: response.error };
   },
 
-  // Update user data
-  updateUser(user: User) {
-    authStore.update(state => ({
-      ...state,
-      user
-    }));
+  async refreshPersonProfile() {
+    const personResponse = await personService.getCurrentUserProfile();
+    if (personResponse.success) {
+      authStore.update((state: AuthState) => ({
+        ...state,
+        person: personResponse.data || null
+      }));
+    }
   }
 };
 
