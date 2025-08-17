@@ -12,6 +12,11 @@
   // Subscribe to auth store
   $: isAuthenticated = $authStore.isAuthenticated;
 
+  // Ensure home page is shown when user becomes authenticated
+  $: if (isAuthenticated) {
+    currentPage = 'home';
+  }
+
   onMount(async () => {
     await authActions.init();
   });
