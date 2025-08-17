@@ -79,7 +79,8 @@ export interface LendingCreate {
 // Person types
 export enum PersonRole {
   USER = 'user',
-  ADMIN = 'admin'
+  ADMIN = 'admin',
+  SERVICE_USER = 'service_user'
 }
 
 export interface Person {

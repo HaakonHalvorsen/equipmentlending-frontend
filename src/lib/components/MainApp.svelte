@@ -3,7 +3,7 @@
   import { authStore, authActions } from '../stores/auth.js';
   import Navigation from './Navigation.svelte';
   import Home from './Home.svelte';
-  import AdminPanel from './AdminPanel.svelte';
+  import UserManagement from './UserManagement.svelte';
   import Login from './Login.svelte';
 
   let currentPage = 'home';
@@ -25,7 +25,7 @@
       case 'home':
         return Home;
       case 'admin':
-        return AdminPanel;
+        return UserManagement;
       case 'settings':
         return Home; // Placeholder - will be Settings component
       default:
