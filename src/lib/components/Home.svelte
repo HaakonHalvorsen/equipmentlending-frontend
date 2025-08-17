@@ -5,7 +5,8 @@
     lendingService,
     type Equipment, 
     type Lending,
-    type LendingCreate 
+    type LendingCreate,
+    PersonRole 
   } from '../api/index.js';
   import { authStore } from '../stores/auth.js';
 
@@ -111,11 +112,22 @@
     searchQuery = ''; // Clear search when equipment is selected
     error = '';
     success = '';
+    
+    // Ensure regular users can only perform regular lending
+    if (!canPerformService) {
+      lendingForm.is_service = false;
+    }
   }
 
   async function handleLendEquipment(event: SubmitEvent) {
     event.preventDefault();
     if (!selectedEquipment) return;
+
+    // Additional security check: prevent regular users from creating service lendings
+    if (lendingForm.is_service && !canPerformService) {
+      error = 'You do not have permission to create service lendings';
+      return;
+    }
 
     actionLoading = true;
     error = '';
@@ -199,6 +211,10 @@
       equipment.barcode.toString().includes(query)
     );
   });
+
+  // Check if current user can perform service operations
+  $: canPerformService = $authStore.person?.role === PersonRole.ADMIN || 
+                         $authStore.person?.role === PersonRole.SERVICE_USER;
 </script>
 
 <div class="p-6 max-w-7xl mx-auto">
@@ -394,50 +410,67 @@
             <!-- Lending Form -->
             <form onsubmit={handleLendEquipment} class="space-y-4">
               <!-- Lending Type -->
-              <fieldset>
-                <legend class="block text-sm font-medium text-gray-700 mb-2">Lending Type</legend>
-                <div class="grid grid-cols-2 gap-3">
-                  <label class="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-colors duration-200 {
-                    !lendingForm.is_service ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
-                  }">
-                    <input 
-                      type="radio" 
-                      bind:group={lendingForm.is_service} 
-                      value={false}
-                      class="text-blue-600"
-                    />
-                    <div>
-                      <div class="font-medium text-gray-900 text-sm">Regular</div>
-                      <div class="text-xs text-gray-600">Lend to person</div>
+              {#if canPerformService}
+                <fieldset>
+                  <legend class="block text-sm font-medium text-gray-700 mb-2">Lending Type</legend>
+                  <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-colors duration-200 {
+                      !lendingForm.is_service ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+                    }">
+                      <input 
+                        type="radio" 
+                        bind:group={lendingForm.is_service} 
+                        value={false}
+                        class="text-blue-600"
+                      />
+                      <div>
+                        <div class="font-medium text-gray-900 text-sm">Regular</div>
+                        <div class="text-xs text-gray-600">Lend to person</div>
+                      </div>
+                    </label>
+                    
+                    <label class="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-colors duration-200 {
+                      lendingForm.is_service ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:bg-gray-50'
+                    }">
+                      <input 
+                        type="radio" 
+                        bind:group={lendingForm.is_service} 
+                        value={true}
+                        class="text-orange-600"
+                      />
+                      <div>
+                        <div class="font-medium text-gray-900 text-sm">Service</div>
+                        <div class="text-xs text-gray-600">Maintenance</div>
+                      </div>
+                    </label>
+                  </div>
+                </fieldset>
+              {:else}
+                <!-- Regular users only see regular lending -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
                     </div>
-                  </label>
-                  
-                  <label class="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer transition-colors duration-200 {
-                    lendingForm.is_service ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:bg-gray-50'
-                  }">
-                    <input 
-                      type="radio" 
-                      bind:group={lendingForm.is_service} 
-                      value={true}
-                      class="text-orange-600"
-                    />
                     <div>
-                      <div class="font-medium text-gray-900 text-sm">Service</div>
-                      <div class="text-xs text-gray-600">Maintenance</div>
+                      <div class="font-medium text-blue-900 text-sm">Regular Lending</div>
+                      <div class="text-xs text-blue-700">Equipment will be lent to you</div>
                     </div>
-                  </label>
+                  </div>
                 </div>
-              </fieldset>
+              {/if}
 
               <!-- Description -->
               <div>
                 <label for="lending-description" class="block text-sm font-medium text-gray-700 mb-2">
-                  {lendingForm.is_service ? 'Service Description' : 'Purpose'} *
+                  {canPerformService && lendingForm.is_service ? 'Service Description' : 'Purpose'} *
                 </label>
                 <textarea 
                   id="lending-description"
                   bind:value={lendingForm.description}
-                  placeholder={lendingForm.is_service ? 'Describe the service needed...' : 'Describe the purpose...'}
+                  placeholder={canPerformService && lendingForm.is_service ? 'Describe the service needed...' : 'Describe the purpose of this lending...'}
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows="2"
                   required
@@ -453,7 +486,7 @@
                 {#if actionLoading}
                   Processing...
                 {:else}
-                  {lendingForm.is_service ? 'Send for Service' : 'Lend Equipment'}
+                  {canPerformService && lendingForm.is_service ? 'Lend for conducting Service' : 'Lend Equipment'}
                 {/if}
               </button>
             </form>
