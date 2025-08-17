@@ -31,6 +31,11 @@ export interface UserLogin {
   password: string;
 }
 
+export interface PasswordChange {
+  current_password: string;
+  new_password: string;
+}
+
 export interface UserResponse {
   user: User;
   access_token: string;

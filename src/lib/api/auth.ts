@@ -4,6 +4,7 @@ import type {
   UserLogin, 
   UserResponse, 
   User, 
+  PasswordChange,
   ApiResponse 
 } from '../types/api.js';
 
@@ -41,6 +42,10 @@ export class AuthService {
 
   async getCurrentUser(): Promise<ApiResponse<User>> {
     return apiClient.get<User>('/auth/me');
+  }
+
+  async changePassword(passwordData: PasswordChange): Promise<ApiResponse<Record<string, any>>> {
+    return apiClient.put<Record<string, any>>('/auth/change-password', passwordData);
   }
 
   async deleteAccount(): Promise<ApiResponse<Record<string, any>>> {
