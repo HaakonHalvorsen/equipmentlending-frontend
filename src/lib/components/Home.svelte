@@ -28,6 +28,7 @@
   let recentLendings: Lending[] = [];
   let activeLendings: Lending[] = [];
   let availableEquipment: Equipment[] = [];
+  let allEquipment: Equipment[] = [];
 
   // Lending form
   let lendingForm: LendingCreate = {
@@ -50,7 +51,7 @@
       const currentPerson = $authStore.person;
       
       // Load equipment statistics and other data
-      const [allEquipment, allActiveLendings, allLendings, serviceDue, availableEquipmentData] = await Promise.all([
+      const [allEquipmentResponse, allActiveLendings, allLendings, serviceDue, availableEquipmentData] = await Promise.all([
         equipmentService.getAllEquipment(),
         lendingService.getActiveLendings(),
         lendingService.getAllLendings(),
@@ -58,9 +59,10 @@
         equipmentService.getAvailableEquipment()
       ]);
 
-      // Calculate equipment stats
-      if (allEquipment.success && allEquipment.data) {
-        const equipment = allEquipment.data;
+      // Store and calculate equipment stats
+      if (allEquipmentResponse.success && allEquipmentResponse.data) {
+        const equipment = allEquipmentResponse.data;
+        allEquipment = equipment; // Store for equipment name lookups
         equipmentStats = {
           total: equipment.length,
           available: equipment.filter(e => e.status === 'available').length,
@@ -191,11 +193,10 @@
   }
 
   function getEquipmentName(equipmentId: number): string {
-    // Try to find in available equipment first
-    let equipment = availableEquipment.find(eq => eq.id === equipmentId);
+    // Search in all equipment to find the name
+    let equipment = allEquipment.find(eq => eq.id === equipmentId);
     
-    // If not found, we could maintain a separate equipment cache or make API call
-    // For now, return the ID if name not found
+    // Return equipment name or fallback to ID display
     return equipment?.name || `Equipment #${equipmentId}`;
   }
 
@@ -589,7 +590,7 @@
             {#each recentLendings as lending}
               <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div class="flex-1">
-                  <p class="font-medium text-gray-900">Equipment #{lending.equipment_id}</p>
+                  <p class="font-medium text-gray-900">{getEquipmentName(lending.equipment_id)}</p>
                   <p class="text-sm text-gray-600 truncate">{lending.description}</p>
                   <p class="text-xs text-gray-500">{formatDate(lending.lend_time)}</p>
                 </div>
