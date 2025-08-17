@@ -7,6 +7,7 @@
     type Lending,
     type LendingCreate 
   } from '../api/index.js';
+  import { authStore } from '../stores/auth.js';
 
   let loading = true;
   let actionLoading = false;
@@ -45,8 +46,11 @@
     loading = true;
     
     try {
-      // Load equipment statistics
-      const [allEquipment, activeLendingsData, allLendings, serviceDue, availableEquipmentData] = await Promise.all([
+      // Get current person ID
+      const currentPerson = $authStore.person;
+      
+      // Load equipment statistics and other data
+      const [allEquipment, allActiveLendings, allLendings, serviceDue, availableEquipmentData] = await Promise.all([
         equipmentService.getAllEquipment(),
         lendingService.getActiveLendings(),
         lendingService.getAllLendings(),
@@ -65,10 +69,20 @@
         };
       }
 
-      // Set active lendings
-      if (activeLendingsData.success && activeLendingsData.data) {
-        activeLendings = activeLendingsData.data;
-        lendingStats.activeCount = activeLendingsData.data.length;
+      // Load personal active lendings if user is logged in
+      if (currentPerson?.id) {
+        const personalLendingsData = await lendingService.getLendingsByPerson(currentPerson.id);
+        if (personalLendingsData.success && personalLendingsData.data) {
+          // Filter to only active lendings (no submit_time)
+          activeLendings = personalLendingsData.data.filter(lending => !lending.submit_time);
+        }
+      } else {
+        activeLendings = [];
+      }
+
+      // Set lending stats from all active lendings
+      if (allActiveLendings.success && allActiveLendings.data) {
+        lendingStats.activeCount = allActiveLendings.data.length;
       }
       
       if (allLendings.success && allLendings.data) {
