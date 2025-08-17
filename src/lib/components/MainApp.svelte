@@ -5,6 +5,7 @@
   import Home from './Home.svelte';
   import UserManagement from './UserManagement.svelte';
   import EquipmentManagement from './EquipmentManagement.svelte';
+  import LendingHistory from './LendingHistory.svelte';
   import Settings from './Settings.svelte';
   import Login from './Login.svelte';
 
@@ -31,10 +32,12 @@
     switch (currentPage) {
       case 'home':
         return Home;
-      case 'equipment':
-        return EquipmentManagement;
+      case 'history':
+        return LendingHistory;
       case 'admin':
         return UserManagement;
+      case 'equipment':
+        return EquipmentManagement;
       case 'settings':
         return Settings;
       default:
