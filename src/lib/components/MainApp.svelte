@@ -4,6 +4,7 @@
   import Navigation from './Navigation.svelte';
   import Home from './Home.svelte';
   import UserManagement from './UserManagement.svelte';
+  import Settings from './Settings.svelte';
   import Login from './Login.svelte';
 
   let currentPage = 'home';
@@ -32,7 +33,7 @@
       case 'admin':
         return UserManagement;
       case 'settings':
-        return Home; // Placeholder - will be Settings component
+        return Settings;
       default:
         return Home;
     }
