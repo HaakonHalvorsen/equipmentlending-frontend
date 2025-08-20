@@ -1,6 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:8000',
+  BASE_URL: 'https://app-equipmentlending-backend-code-prod.azurewebsites.net',
   TIMEOUT: 10000, // 10 seconds
 } as const;
 
