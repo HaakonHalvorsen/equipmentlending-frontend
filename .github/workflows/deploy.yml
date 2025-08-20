@@ -26,11 +26,11 @@ jobs:
     - name: Build application
       run: npm run build
       env:
-        VITE_API_BASE_URL: ${secrets.VITE_API_BASE_URL}
+        VITE_API_BASE_URL: ${{secrets.VITE_API_BASE_URL}}
     
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
         app-name: 'your-frontend-app'
-        publish-profile: ${secrets.AZURE_WEBAPP_PUBLISH_PROFILE}
+        publish-profile: ${{secrets.AZURE_WEBAPP_PUBLISH_PROFILE}}
         package: ./build
